@@ -92,16 +92,28 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-	HAL_StatusTypeDef status;
-	status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 10, HAL_MAX_DELAY);
+  /*uint8_t buf1=0x10;
+  HAL_I2C_Master_Transmit(&hi2c1, 0x23 <<1,&buf1 , 1, HAL_MAX_DELAY);
+  HAL_Delay(150);
+  uint8_t rawLux[2];
+  HAL_I2C_Master_Receive(&hi2c1, 0x23<<1, rawLux, 2, HAL_MAX_DELAY);*/
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint16_t lux = 0;
+	  uint8_t buf1=0x10;
+	  HAL_I2C_Master_Transmit(&hi2c1, 0x23 <<1,&buf1 , 1, HAL_MAX_DELAY);
+	  HAL_Delay(150);
+	  uint8_t rawLux[2];
+	  HAL_I2C_Master_Receive(&hi2c1, 0x23<<1, rawLux, 2, HAL_MAX_DELAY);
+	  lux=(rawLux[0] << 8) | rawLux[1];
+		HAL_StatusTypeDef status;
+		status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 1, HAL_MAX_DELAY);
 	  if (status == HAL_OK) {
-	      printf("I2C-Gerät gefunden!\n");
+	      printf("I2C-Gerät gefunden!\r\n\t%i",lux);
 	  } else {
 	      printf("I2C-Gerät nicht gefunden. Fehlercode: %d\n", status);
 	  }
