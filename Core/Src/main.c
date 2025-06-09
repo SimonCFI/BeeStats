@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 	extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+#include "BH1750.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +42,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
+	I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 
@@ -92,20 +93,23 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-	HAL_StatusTypeDef status;
-	status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 10, HAL_MAX_DELAY);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+		HAL_StatusTypeDef status;
+		status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 10, HAL_MAX_DELAY);
+	  int16_t lux = getBH1750_Lux();
 	  if (status == HAL_OK) {
-	      printf("I2C-Gerät gefunden!\n");
+	      printf("I2C-Gerät gefunden!\r\n%i",lux);
 	  } else {
 	      printf("I2C-Gerät nicht gefunden. Fehlercode: %d\n", status);
 	  }
 	  HAL_Delay(1000);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
