@@ -47,7 +47,10 @@ I2C_HandleTypeDef hi2c1;
 
 RTC_HandleTypeDef hrtc;
 
+SPI_HandleTypeDef hspi1;
+
 /* USER CODE BEGIN PV */
+uint32_t ts;
 
 /* USER CODE END PV */
 
@@ -56,6 +59,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -73,7 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	float lux;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -97,41 +101,23 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   MX_RTC_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_PWR_EnableBkUpAccess();  // Zugriff auf RTC Backup-Domain erlauben
 
-  RTC_TimeTypeDef sTime = {0};
-  RTC_DateTypeDef sDate = {0};
 
-  // Zeit setzen
-  sTime.Hours = 15;
-  sTime.Minutes = 00;
-  sTime.Seconds = 0;
-  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) {
-      Error_Handler();
-  }
-
-  // Datum setzen
-  sDate.WeekDay = RTC_WEEKDAY_SUNDAY;
-  sDate.Month = RTC_MONTH_JUNE;
-  sDate.Date = 15;
-  sDate.Year = 25;  // 2025 = 25
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK) {
-      Error_Handler();
-  }
+  int counter = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  int wh1=0;
+  while (wh1<20)
   {
 		HAL_StatusTypeDef status;
 		status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 10, HAL_MAX_DELAY);
-	  int16_t lux = getBH1750_Lux();
+	  float lux = getBH1750_Lux();
 	  if (status == HAL_OK) {
-	      printf("I2C-Gerät gefunden!\r\n%i",lux);
+	      printf("Lichtstärke ist %i Lux\r\n",lux);
 	  } else {
 	      printf("I2C-Gerät nicht gefunden. Fehlercode: %d\n", status);
 	  }
@@ -142,19 +128,34 @@ int main(void)
 	  HAL_RTC_GetTime(&hrtc, &currentTime, RTC_FORMAT_BIN);
 	  HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);  // Muss nach GetTime!
 
-	  printf("Uhrzeit: %02d:%02d:%02d | Datum: %02d.%02d.20%02d\r\n",
-	         currentTime.Hours,
+      uint32_t timestamp = (currentTime.Hours << 16) |
+                            (currentTime.Minutes << 8) |
+                            (currentTime.Seconds);
+
+       FRAM_LogEntry(timestamp, lux);
+
+
+	  printf("Counter: %i Uhrzeit: %02d:%02d:%02d | Datum: %02d.%02d.20%02d\r\n",
+	         counter,
+			 currentTime.Hours,
 	         currentTime.Minutes,
 	         currentTime.Seconds,
 	         currentDate.Date,
 	         currentDate.Month,
 	         currentDate.Year);
-
+	  counter++;
 	  HAL_Delay(1000);  // Ausgabe alle 1s
 
+
+	  wh1++;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+  }
+  int wh2=0;
+  while (wh2<20){
+	  FRAM_ReadEntry(wh2,&ts,&lux);
+	  wh2++;
   }
   /* USER CODE END 3 */
 }
@@ -278,9 +279,9 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
-  sTime.Seconds = 0x0;
+  sTime.Hours = 15;
+  sTime.Minutes = 00;
+  sTime.Seconds = 00;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
   if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
@@ -288,9 +289,9 @@ static void MX_RTC_Init(void)
     Error_Handler();
   }
   sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
+  sDate.Month = RTC_MONTH_JULY;
+  sDate.Date = 12;
+  sDate.Year = 25;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -303,12 +304,51 @@ static void MX_RTC_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
@@ -318,6 +358,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(FRAM_GPIO_Port, FRAM_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin : FRAM_Pin */
+  GPIO_InitStruct.Pin = FRAM_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(FRAM_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

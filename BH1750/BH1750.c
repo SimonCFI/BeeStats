@@ -14,7 +14,7 @@ extern I2C_HandleTypeDef hi2c1;
 
 uint8_t cmd = 0x10;
 int16_t rawLux[2];
-int16_t lux;
+float lux;
 
 int16_t getBH1750_Lux (void){
 

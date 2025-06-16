@@ -13,6 +13,7 @@ RM := rm -rf
 -include USB_DEVICE/App/subdir.mk
 -include Middlewares/ST/STM32_USB_Device_Library/Core/Src/subdir.mk
 -include Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/subdir.mk
+-include FRAM/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
@@ -66,7 +67,7 @@ main-build: BeeStats.elf secondary-outputs
 
 # Tool invocations
 BeeStats.elf BeeStats.map: $(OBJS) $(USER_OBJS) C:\Users\simon\Documents\CubeIDE\Projects\BeeStats\STM32F411CEUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "BeeStats.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\simon\Documents\CubeIDE\Projects\BeeStats\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BeeStats.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "BeeStats.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\simon\Documents\CubeIDE\Projects\BeeStats\STM32F411CEUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BeeStats.map" -Wl,--gc-sections -static -u _printf_float --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

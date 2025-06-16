@@ -7,6 +7,7 @@
 
 #include "main.h"
 #include "FRAM.h"
+#include "stdio.h"
 
 extern SPI_HandleTypeDef hspi1;
 
@@ -31,11 +32,11 @@ void FRAM_WriteBytes(uint16_t addr, uint8_t* data, uint16_t len) {
     FRAM_CS_HIGH();
 }
 
-void FRAM_ReadBytes(uint16_t addr, uint8_t* data, uint16_t len) {
+void FRAM_ReadBytes(uint16_t addr, uint8_t* buffer, uint16_t length) {
     uint8_t cmd[3] = {0x03, addr >> 8, addr & 0xFF};
     FRAM_CS_LOW();
     HAL_SPI_Transmit(&hspi1, cmd, 3, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&hspi1, data, len, HAL_MAX_DELAY);
+    HAL_SPI_Receive(&hspi1, buffer, length, HAL_MAX_DELAY);
     FRAM_CS_HIGH();
 }
 
@@ -76,6 +77,9 @@ uint8_t FRAM_ReadEntry(uint16_t index, uint32_t* timestamp, float* value) {
     val[1] = buffer[5];
     val[2] = buffer[6];
     val[3] = buffer[7];
+
+    // Ausgabe
+    printf("Eintrag %u: Zeitstempel: %lu, Lichtstärke: %.2f Lux\r\n", index, *timestamp, *value);
 
     return 1;
 }
