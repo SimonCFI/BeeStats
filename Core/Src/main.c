@@ -67,6 +67,7 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
 /* USER CODE END 0 */
 
 /**
@@ -77,7 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	float lux;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -103,37 +104,17 @@ int main(void)
   MX_RTC_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
+  RTC_TimeTypeDef currentTime;
+  RTC_DateTypeDef currentDate;
 
   int counter = 0;
   /* USER CODE END 2 */
-
+while(1){
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  int wh1=0;
-  while (wh1<20)
-  {
-		HAL_StatusTypeDef status;
-		status=HAL_I2C_IsDeviceReady(&hi2c1, 0x23 << 1, 10, HAL_MAX_DELAY);
-	  float lux = getBH1750_Lux();
-	  if (status == HAL_OK) {
-	      printf("Lichtstärke ist %i Lux\r\n",lux);
-	  } else {
-	      printf("I2C-Gerät nicht gefunden. Fehlercode: %d\n", status);
-	  }
-	  HAL_Delay(1000);
-	  RTC_TimeTypeDef currentTime;
-	  RTC_DateTypeDef currentDate;
 
 	  HAL_RTC_GetTime(&hrtc, &currentTime, RTC_FORMAT_BIN);
 	  HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);  // Muss nach GetTime!
-
-      uint32_t timestamp = (currentTime.Hours << 16) |
-                            (currentTime.Minutes << 8) |
-                            (currentTime.Seconds);
-
-       FRAM_LogEntry(timestamp, lux);
-
 
 	  printf("Counter: %i Uhrzeit: %02d:%02d:%02d | Datum: %02d.%02d.20%02d\r\n",
 	         counter,
@@ -147,16 +128,12 @@ int main(void)
 	  HAL_Delay(1000);  // Ausgabe alle 1s
 
 
-	  wh1++;
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
-  int wh2=0;
-  while (wh2<20){
-	  FRAM_ReadEntry(wh2,&ts,&lux);
-	  wh2++;
-  }
+
   /* USER CODE END 3 */
 }
 
@@ -284,7 +261,7 @@ static void MX_RTC_Init(void)
   sTime.Seconds = 00;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
@@ -293,7 +270,7 @@ static void MX_RTC_Init(void)
   sDate.Date = 12;
   sDate.Year = 25;
 
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
