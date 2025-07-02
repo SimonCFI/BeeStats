@@ -24,7 +24,7 @@
 
 #include "BH1750.h"
 #include "FRAM.h"
-
+extern uint16_t FRAMindex;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -110,26 +110,49 @@ int main(void)
   RTC_TimeTypeDef currentTime;
   RTC_DateTypeDef currentDate;
 
-  int counter = 0;
+  FRAMindex = FRAM_ReadIndex();
+  printf("Letzter Index aus FRAM: %u\r\n", FRAMindex);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-while(1){
-	  HAL_RTC_GetTime(&hrtc, &currentTime, RTC_FORMAT_BIN);
+
+for(int i1=0;i1<11;i1++){
+
+	HAL_RTC_GetTime(&hrtc, &currentTime, RTC_FORMAT_BIN);
 	  HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);  // Muss nach GetTime!
 
+	  SensorData data;
+	  data.year = currentDate.Year;
+	  data.month = currentDate.Month;
+	  data.day = currentDate.Date;
+	  data.hour = currentTime.Hours;
+	  data.minute = currentTime.Minutes;
+	  data.second = currentTime.Seconds;
+	  data.weight = FRAMindex;
+
+	  FRAM_WriteEntry(FRAMindex,&data);
+
 	  printf("Counter: %i Uhrzeit: %02d:%02d:%02d | Datum: %02d.%02d.20%02d\r\n",
-	         counter,
+			  FRAMindex,
 			 currentTime.Hours,
 	         currentTime.Minutes,
 	         currentTime.Seconds,
 	         currentDate.Date,
 	         currentDate.Month,
 	         currentDate.Year);
-	  counter++;
+
+	  FRAMindex++;
+	  FRAM_WriteIndex(FRAMindex);
 	  HAL_Delay(1000);  // Ausgabe alle 1s
+
+
 }
+
+FRAM_PrintEntry(15);
+FRAM_PrintEntry(6);
+FRAM_PrintEntry(7);
+
 
 
     /* USER CODE END WHILE */
@@ -259,21 +282,21 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x0;
+  sTime.Hours = 19;
   sTime.Minutes = 0x0;
   sTime.Seconds = 0x0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
-  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
+  sDate.WeekDay = RTC_WEEKDAY_SATURDAY;
+  sDate.Month = RTC_MONTH_JULY;
+  sDate.Date = 12;
+  sDate.Year = 25;
 
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
@@ -306,7 +329,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;  //geändert wegen Problemen, vorher wars 2
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

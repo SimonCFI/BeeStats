@@ -12,26 +12,18 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-#define FRAM_CS_LOW()   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
-#define FRAM_CS_HIGH()  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET)
-
-#define FRAM_WRITE_ENABLE  0x06
-#define FRAM_WRITE         0x02
-#define FRAM_READ          0x03
-
-#define FRAM_START_ADDR  0x0000
-#define ENTRY_SIZE       sizeof(SensorData)
-#define MAX_ENTRIES      (8192 / ENTRY_SIZE)
+uint16_t FRAMindex;
 
 void FRAM_WriteEnable(void) {
     uint8_t cmd = FRAM_WRITE_ENABLE; // WREN
     FRAM_CS_LOW();
     HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+    HAL_Delay(1);
     FRAM_CS_HIGH();
 }
 
 void FRAM_WriteStruct(uint16_t address, SensorData *data) {
-	FRAM_WriteEnable();
+    FRAM_WriteEnable();
 
     uint8_t tx[3 + sizeof(SensorData)];
     tx[0] = FRAM_WRITE;
@@ -58,19 +50,64 @@ void FRAM_ReadStruct(uint16_t address, SensorData *data) {
 }
 
 //Schreiben per index
-void FRAM_WriteEntry(uint16_t index, SensorData *data) {
-    if (index >= MAX_ENTRIES) return;
+void FRAM_WriteEntry(uint16_t Windex, SensorData *data) {
+    if (Windex >= MAX_RECORDS) return;
 
-    uint16_t addr = FRAM_START_ADDR + index * ENTRY_SIZE;
+    uint16_t addr = FRAM_START_ADDR + Windex * RECORD_SIZE;
     FRAM_WriteStruct(addr, data);
 }
 
 // Lesen per Index
-void FRAM_ReadEntry(uint16_t index, SensorData *data) {
-    if (index >= MAX_ENTRIES) return;
+void FRAM_ReadEntry(uint16_t Rindex, SensorData *data) {
+    if (Rindex >= MAX_RECORDS) return;
 
-    uint16_t addr = FRAM_START_ADDR + index * ENTRY_SIZE;
+    uint16_t addr = FRAM_START_ADDR + Rindex * RECORD_SIZE;
     FRAM_ReadStruct(addr, data);
+}
+
+void FRAM_PrintEntry(uint16_t index) {
+    SensorData data;
+    FRAM_ReadEntry(index, &data);
+
+    printf("Index %u: %02u.%02u.20%02u %02u:%02u:%02u\tWeight: %u\r\n",
+           index,
+           data.day,
+           data.month,
+           data.year,
+           data.hour,
+           data.minute,
+           data.second,
+           data.weight);
+}
+
+void FRAM_WriteIndex(uint16_t index) {
+    uint8_t cmd[3 + 2];
+    cmd[0] = FRAM_WRITE;
+    cmd[1] = (INDEX_ADDR >> 8) & 0xFF;
+    cmd[2] = INDEX_ADDR & 0xFF;
+    cmd[3] = index & 0xFF;
+    cmd[4] = (index >> 8) & 0xFF;
+
+    FRAM_WriteEnable();
+    FRAM_CS_LOW();
+    HAL_SPI_Transmit(&hspi1, cmd, sizeof(cmd), HAL_MAX_DELAY);
+    FRAM_CS_HIGH();
+}
+
+uint16_t FRAM_ReadIndex(void) {
+    uint8_t cmd[3] = {
+        FRAM_READ,
+        (INDEX_ADDR >> 8) & 0xFF,
+        INDEX_ADDR & 0xFF
+    };
+    uint8_t rx[2];
+
+    FRAM_CS_LOW();
+    HAL_SPI_Transmit(&hspi1, cmd, 3, HAL_MAX_DELAY);
+    HAL_SPI_Receive(&hspi1, rx, 2, HAL_MAX_DELAY);
+    FRAM_CS_HIGH();
+
+    return rx[0] | (rx[1] << 8);
 }
 /*
 void FRAM_WriteBytes(uint16_t addr, uint8_t* data, uint16_t len) {
